@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chicas Programadoras Quiz — Jugar</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <h1>Chicas Programadoras Quiz</h1>
+
+      <!-- Join screen -->
+      <section id="joinScreen" class="card">
+        <div id="joinForm">
+          <h2>Ingresa tu nombre</h2>
+          <input
+            id="nameInput"
+            type="text"
+            maxlength="24"
+            placeholder="Tu apodo..."
+            autocomplete="off"
+          />
+          <h3>Elige tu avatar</h3>
+          <div
+            class="avatar-grid"
+            id="avatarGrid"
+            role="radiogroup"
+            aria-label="Avatar"
+          ></div>
+          <button id="joinBtn" class="btn-full">Entrar</button>
+          <p id="joinStatus" class="status"></p>
+        </div>
+        <div id="joinLocked" class="center hidden">
+          <p class="big">⏳</p>
+          <h2>El juego ya está en curso</h2>
+          <p>
+            Espera a que termine. Podrás entrar cuando el anfitrión vuelva al
+            lobby.
+          </p>
+        </div>
+      </section>
+
+      <!-- Waiting in lobby -->
+      <section id="waitScreen" class="card hidden center">
+        <p class="big" id="waitAvatar">🎮</p>
+        <h2>¡Listo, <span id="playerName"></span>!</h2>
+        <p>Espera a que el anfitrión inicie el juego.</p>
+      </section>
+
+      <!-- Answering a question -->
+      <section id="questionScreen" class="card hidden">
+        <div class="meta">
+          <span id="qCounter"></span>
+          <span id="qTimer"></span>
+        </div>
+        <h2 class="question-text" id="qText"></h2>
+        <div class="answers" id="answers"></div>
+        <p id="answerStatus" class="status"></p>
+      </section>
+
+      <!-- Result after a question -->
+      <section id="resultScreen" class="card hidden center">
+        <p class="player-avatar" id="resultAvatar"></p>
+        <h2 id="resultTitle"></h2>
+        <p class="big" id="resultEmoji"></p>
+        <p id="resultPoints"></p>
+        <p>Puntaje total: <strong id="resultScore">0</strong></p>
+        <p>Posición: <strong id="resultRank">-</strong></p>
+      </section>
+
+      <!-- Game over -->
+      <section id="endScreen" class="card hidden center">
+        <h2>¡Juego terminado!</h2>
+        <p class="player-avatar" id="endAvatar"></p>
+        <p class="big" id="endPlace"></p>
+        <p>Puntaje final: <strong id="endScore">0</strong></p>
+      </section>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/player.js"></script>
+  </body>
+</html>
