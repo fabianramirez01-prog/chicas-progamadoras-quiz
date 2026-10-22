@@ -843,3 +843,14 @@ button:disabled {
     height: 40px;
   }
 }
+
+/* ---- App footer ---- */
+.app-footer {
+  width: 100%;
+  text-align: center;
+  padding: 18px 0 8px;
+  margin-top: auto;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
