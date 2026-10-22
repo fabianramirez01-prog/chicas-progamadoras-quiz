@@ -1,0 +1,24 @@
+# Render deployment config (https://render.com)
+# Render runs Node and supports WebSockets, which this app needs.
+#
+# Deploy steps:
+#   1. Push this repo to GitHub (already done).
+#   2. On Render: New + -> Blueprint -> connect this repo.
+#      Render reads this file automatically.
+#   3. Or: New + -> Web Service -> pick the repo and use the settings below.
+services:
+  - type: web
+    name: chicas-programadoras-quiz
+    runtime: node
+    plan: free
+    # Build and start commands.
+    buildCommand: npm install
+    startCommand: npm start
+    # Render injects PORT automatically; server.js already reads process.env.PORT.
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: QUESTION_TIME
+        value: "20"
+    healthCheckPath: /
+    autoDeploy: true

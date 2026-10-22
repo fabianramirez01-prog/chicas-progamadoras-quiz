@@ -4,6 +4,9 @@
   "description": "Chicas Programadoras Quiz LAN quiz app that serves questions from a markdown file",
   "main": "server.js",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node server.js"
   },

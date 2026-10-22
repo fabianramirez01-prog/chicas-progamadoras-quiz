@@ -145,10 +145,10 @@ This prints every parsed question with its correct answer marked.
 
 Settings are read from environment variables at startup:
 
-| Variable        | Default | Description                              |
-| --------------- | ------- | ---------------------------------------- |
-| `PORT`          | `3000`  | Port the server listens on.              |
-| `QUESTION_TIME` | `20`    | Seconds allowed per question.            |
+| Variable        | Default | Description                   |
+| --------------- | ------- | ----------------------------- |
+| `PORT`          | `3000`  | Port the server listens on.   |
+| `QUESTION_TIME` | `20`    | Seconds allowed per question. |
 
 Examples:
 
@@ -159,6 +159,51 @@ PORT=8080 npm start
 # Give players 30 seconds per question
 QUESTION_TIME=30 npm start
 ```
+
+---
+
+## Deploying online
+
+> **GitHub Pages will not work for this app.** Pages serves only static files,
+> but this is a Node.js + Socket.IO server with live WebSocket connections. Use
+> a host that runs Node. The server already reads `process.env.PORT`, so no code
+> changes are needed.
+
+Config files are included for several platforms:
+
+### Render (`render.yaml`)
+
+1. Push the repo to GitHub.
+2. On [Render](https://render.com): **New + → Blueprint**, connect the repo.
+   Render reads `render.yaml` automatically (free plan, build `npm install`,
+   start `npm start`).
+3. Open the generated `*.onrender.com` URL. The host screen is at
+   `/host.html`; players use the root URL.
+
+### Railway / Heroku (`Procfile`)
+
+- **Railway:** create a project from the GitHub repo; it detects Node and uses
+  the `Procfile` (`web: node server.js`).
+- **Heroku:** `heroku create` then `git push heroku main`.
+
+### Fly.io / any container host (`Dockerfile` + `fly.toml`)
+
+```bash
+fly auth login
+fly launch --copy-config --name chicas-programadoras-quiz
+fly deploy
+```
+
+The `Dockerfile` also works on Railway, Google Cloud Run, and other container
+platforms. Build locally with:
+
+```bash
+docker build -t cpquiz .
+docker run -p 3000:3000 cpquiz
+```
+
+Once deployed, everyone connects over the internet (no shared Wi-Fi needed) —
+just share the public host and player URLs.
 
 ---
 
@@ -186,12 +231,18 @@ QuizApp/
 ├── parseQuestions.js     # Parses questionsAndAnswers.md into question data
 ├── questionsAndAnswers.md# The quiz content (edit this)
 ├── package.json
+├── render.yaml           # Render deployment config
+├── Procfile              # Railway / Heroku process definition
+├── Dockerfile            # Container image (Fly.io, Cloud Run, etc.)
+├── fly.toml              # Fly.io deployment config
+├── .dockerignore
 └── public/               # Client assets served to browsers
     ├── index.html        # Player (phone) view
     ├── player.js
     ├── host.html         # Host (projector) view
     ├── host.js
     ├── style.css         # Shared styles / brand palette
+    ├── logo.jpg          # Club logo (corner + favicon)
     └── check.svg         # "Correct answer" check asset
 ```
 

@@ -1,0 +1,30 @@
+# Fly.io deployment config (https://fly.io)
+# Fly runs containers and supports WebSockets.
+#
+# Deploy steps:
+#   1. Install flyctl and run: fly auth login
+#   2. In this folder run: fly launch --copy-config --name chicas-programadoras-quiz
+#      (it will use this fly.toml and the Dockerfile)
+#   3. Deploy updates with: fly deploy
+app = "chicas-programadoras-quiz"
+primary_region = "mia"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  QUESTION_TIME = "20"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[http_service.checks]]
+  method = "get"
+  path = "/"
+  interval = "30s"
+  timeout = "5s"
