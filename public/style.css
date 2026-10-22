@@ -759,3 +759,26 @@ button:disabled {
   flex-direction: column;
   gap: 12px;
 }
+
+/* ---- Corner logo (top-left margin) ---- */
+.corner-logo {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+/* On narrow screens the fixed logo would overlap content, so keep it compact
+   and let the page content clear it. */
+@media (max-width: 640px) {
+  .corner-logo {
+    width: 56px;
+    height: 56px;
+    top: 10px;
+    left: 10px;
+  }
+}

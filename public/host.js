@@ -49,6 +49,9 @@ function applyPhase(phase) {
   else if (phase === "ended") {
     // leaderboard filled by game:ended
   }
+  // The "Volver al inicio" button only makes sense during an active game;
+  // hide it while in the lobby (no game started).
+  el("resetBtn").classList.toggle("hidden", phase === "lobby");
 }
 
 // ---- Controls ----
