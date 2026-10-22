@@ -228,12 +228,19 @@ function revealAnswer() {
 
   const q = questions[game.currentIndex];
 
-  // Tally how many players chose each option for this question.
+  // Tally how many players chose each option, and correct vs. incorrect.
   const distribution = new Array(q.options.length).fill(0);
+  let correctCount = 0;
+  let wrongCount = 0;
+  let noAnswerCount = 0;
   for (const p of game.players.values()) {
     const ans = p.answers.get(game.currentIndex);
     if (ans && ans.optionIndex != null) {
       distribution[ans.optionIndex] += 1;
+      if (ans.correct) correctCount += 1;
+      else wrongCount += 1;
+    } else {
+      noAnswerCount += 1;
     }
   }
 
@@ -243,6 +250,11 @@ function revealAnswer() {
     index: game.currentIndex,
     correctIndex: q.correctIndex,
     distribution,
+    // Correct vs. did-not-accert (wrong + no answer) for the summary graph.
+    correctCount,
+    wrongCount,
+    noAnswerCount,
+    incorrectCount: wrongCount + noAnswerCount,
     leaderboard: board.slice(0, TOP_ROUND),
     totalPlayers: board.length,
   });
