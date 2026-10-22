@@ -11,8 +11,10 @@ const MAX_POINTS = 1000; // points for an instant correct answer
 const MIN_POINTS = 500; // points for a correct answer at the buzzer
 const TOP_ROUND = 5; // players shown on the per-round leaderboard
 const TOP_WINNERS = 3; // players shown on the final winners podium
+const MAX_PLAYERS = 35; // maximum number of players allowed in a game
 
 // Avatars a player may pick. Each is an emoji; the client offers the same set.
+// There are at least MAX_PLAYERS of them so every player can have a unique one.
 const AVATARS = [
   "👩‍💻",
   "👩‍🔬",
@@ -20,14 +22,98 @@ const AVATARS = [
   "🦸‍♀️",
   "🧕",
   "👧",
-  "🐱",
+  "👩‍🎨",
+  "👩‍🏫",
+  "👩‍⚕️",
+  "👩‍🌾",
   "🦊",
+  "🐱",
+  "🐶",
   "🐼",
+  "🐨",
   "🦄",
+  "🐯",
+  "🦁",
+  "🐸",
+  "🐵",
+  "🐧",
+  "🦉",
+  "🦋",
+  "🐢",
+  "🐙",
+  "🦕",
   "🌸",
+  "🌺",
+  "🌻",
+  "🌈",
   "⭐",
+  "⚡",
+  "🔥",
+  "🚀",
+  "🎮",
+  "🎨",
+  "🧩",
+  "💡",
+  "👑",
+  "💎",
 ];
 const DEFAULT_AVATAR = "👩‍💻";
+
+// Pieces used to build a fun random nickname when a player leaves it blank.
+const RANDOM_NAME_ADJ = [
+  "Super",
+  "Mega",
+  "Ultra",
+  "Ninja",
+  "Cosmic",
+  "Pixel",
+  "Turbo",
+  "Cyber",
+  "Astro",
+  "Quantum",
+  "Electro",
+  "Hyper",
+];
+const RANDOM_NAME_NOUN = [
+  "Coder",
+  "Dev",
+  "Hacker",
+  "Byte",
+  "Logic",
+  "Script",
+  "Pixel",
+  "Robot",
+  "Star",
+  "Comet",
+  "Fox",
+  "Unicorn",
+];
+
+// Build a random nickname that is not already taken.
+function randomName() {
+  const taken = new Set(
+    Array.from(game.players.values()).map((p) => p.name.toLowerCase()),
+  );
+  for (let i = 0; i < 50; i++) {
+    const adj =
+      RANDOM_NAME_ADJ[Math.floor(Math.random() * RANDOM_NAME_ADJ.length)];
+    const noun =
+      RANDOM_NAME_NOUN[Math.floor(Math.random() * RANDOM_NAME_NOUN.length)];
+    const num = Math.floor(Math.random() * 100);
+    const candidate = `${adj}${noun}${num}`;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  // Fallback: guaranteed-unique name.
+  return `Jugadora${Date.now().toString().slice(-5)}`;
+}
+
+// Pick an avatar not already in use; fall back to the default set order.
+function pickFreeAvatar() {
+  const used = new Set(Array.from(game.players.values()).map((p) => p.avatar));
+  const free = AVATARS.filter((a) => !used.has(a));
+  if (free.length === 0) return DEFAULT_AVATAR;
+  return free[Math.floor(Math.random() * free.length)];
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -102,10 +188,17 @@ function publicQuestion(index) {
   };
 }
 
+function takenAvatars() {
+  return Array.from(game.players.values()).map((p) => p.avatar);
+}
+
 function broadcastLobby() {
   io.emit("lobby:update", {
     players: playerList(),
     total: questions.length,
+    takenAvatars: takenAvatars(),
+    maxPlayers: MAX_PLAYERS,
+    full: game.players.size >= MAX_PLAYERS,
   });
 }
 
@@ -228,6 +321,7 @@ io.on("connection", (socket) => {
       phase: game.phase,
       players: playerList(),
       total: questions.length,
+      maxPlayers: MAX_PLAYERS,
       lanUrl: `http://${lanAddress()}:${PORT}`,
     });
   });
@@ -262,21 +356,40 @@ io.on("connection", (socket) => {
   // A newly connected client asks for the current phase so the join screen
   // can show the right state (open vs. game in progress).
   socket.on("player:hello", (ack) => {
-    if (ack) ack({ phase: game.phase });
+    if (ack)
+      ack({
+        phase: game.phase,
+        avatars: AVATARS,
+        takenAvatars: takenAvatars(),
+        maxPlayers: MAX_PLAYERS,
+        full: game.players.size >= MAX_PLAYERS,
+      });
   });
 
   socket.on("player:join", (payload, ack) => {
-    const name = String((payload && payload.name) || "")
-      .trim()
-      .slice(0, 24);
-    if (!name) {
-      if (ack) ack({ ok: false, error: "Nombre vacío" });
-      return;
-    }
     if (game.phase !== "lobby") {
       if (ack) ack({ ok: false, error: "El juego ya comenzó." });
       return;
     }
+
+    // Enforce the player cap (allow a rejoining player to keep their slot).
+    if (!game.players.has(socket.id) && game.players.size >= MAX_PLAYERS) {
+      if (ack)
+        ack({
+          ok: false,
+          error: `El juego está lleno (máximo ${MAX_PLAYERS} jugadores).`,
+        });
+      return;
+    }
+
+    // Name is optional: generate a fun random nickname when left blank.
+    let name = String((payload && payload.name) || "")
+      .trim()
+      .slice(0, 24);
+    if (!name) {
+      name = randomName();
+    }
+
     // Prevent duplicate names.
     for (const p of game.players.values()) {
       if (p.name.toLowerCase() === name.toLowerCase()) {
@@ -285,9 +398,18 @@ io.on("connection", (socket) => {
       }
     }
 
-    // Validate the chosen avatar against the allowed set.
+    // Avatars must be unique. If the requested avatar is invalid or already
+    // taken, assign a random free one so every player looks different.
     const requested = payload && payload.avatar;
-    const avatar = AVATARS.includes(requested) ? requested : DEFAULT_AVATAR;
+    const used = new Set(
+      Array.from(game.players.values()).map((p) => p.avatar),
+    );
+    let avatar;
+    if (AVATARS.includes(requested) && !used.has(requested)) {
+      avatar = requested;
+    } else {
+      avatar = pickFreeAvatar();
+    }
 
     game.players.set(socket.id, {
       id: socket.id,

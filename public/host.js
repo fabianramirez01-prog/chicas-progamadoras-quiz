@@ -20,8 +20,11 @@ let timerInterval = null;
 
 socket.emit("host:join");
 
+let maxPlayers = 35;
+
 socket.on("host:state", (state) => {
   el("joinUrl").textContent = state.lanUrl;
+  if (state.maxPlayers) maxPlayers = state.maxPlayers;
   renderPlayers(state.players);
   applyPhase(state.phase);
 });
@@ -30,7 +33,8 @@ socket.on("host:error", ({ message }) => {
   el("hostStatus").textContent = message;
 });
 
-socket.on("lobby:update", ({ players }) => {
+socket.on("lobby:update", ({ players, maxPlayers: mp }) => {
+  if (mp) maxPlayers = mp;
   renderPlayers(players);
 });
 
@@ -159,7 +163,7 @@ socket.on("game:ended", ({ winners, fullBoard }) => {
 
 // ---- Helpers ----
 function renderPlayers(players) {
-  el("playerCount").textContent = players.length;
+  el("playerCount").textContent = `${players.length} / ${maxPlayers}`;
   const chips = el("playerChips");
   chips.innerHTML = "";
   players.forEach((p) => {
@@ -197,10 +201,16 @@ function renderLeaderboard(listEl, board) {
   }
 }
 
-// Top-3 winners podium shown at the end of the game.
+// Top-3 winners podium shown at the end of the game, with a staggered
+// rise-up animation, a crown + confetti for the winner, and click-to-replay.
 function renderPodium(winners) {
   const podium = el("podium");
   podium.innerHTML = "";
+  if (!winners || winners.length === 0) {
+    podium.innerHTML = '<p class="center">Sin jugadores</p>';
+    return;
+  }
+
   // Visual order: 2nd, 1st, 3rd so #1 sits in the middle and tallest.
   const order = [1, 0, 2];
   order.forEach((idx) => {
@@ -208,18 +218,59 @@ function renderPodium(winners) {
     if (!p) return;
     const place = idx + 1;
     const medal = place === 1 ? "🥇" : place === 2 ? "🥈" : "🥉";
+    const crown = place === 1 ? '<div class="podium-crown">👑</div>' : "";
     const div = document.createElement("div");
     div.className = `podium-spot place-${place}`;
     div.innerHTML =
+      `<div class="podium-head">` +
+      crown +
       `<div class="podium-avatar">${p.avatar || "👤"}</div>` +
       `<div class="podium-name">${escapeHtml(p.name)}</div>` +
       `<div class="podium-score">${p.score} pts</div>` +
+      `</div>` +
       `<div class="podium-block"><span class="podium-medal">${medal}</span>` +
       `<span class="podium-place">#${place}</span></div>`;
     podium.appendChild(div);
   });
-  if (winners.length === 0) {
-    podium.innerHTML = '<p class="center">Sin jugadores</p>';
+
+  // Confetti burst once the winner's block has risen.
+  setTimeout(() => launchConfetti(podium), 1300);
+
+  // Tap/click the podium to replay the whole animation.
+  podium.onclick = () => replayPodium(winners);
+}
+
+function replayPodium(winners) {
+  const podium = el("podium");
+  podium.classList.add("replay");
+  // Force reflow so removing the class restarts the animations.
+  void podium.offsetWidth;
+  renderPodium(winners);
+  podium.classList.remove("replay");
+}
+
+function launchConfetti(container) {
+  const colors = [
+    "#ff418b",
+    "#5854a4",
+    "#73bb3e",
+    "#672f91",
+    "#ffd700",
+    "#ffffff",
+  ];
+  const count = 70;
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti";
+    piece.style.left = Math.random() * 100 + "%";
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDuration = 1.6 + Math.random() * 1.4 + "s";
+    piece.style.animationDelay = Math.random() * 0.5 + "s";
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+    if (Math.random() > 0.5) piece.style.borderRadius = "50%";
+    container.appendChild(piece);
+    // Clean up after it falls.
+    setTimeout(() => piece.remove(), 3600);
   }
 }
 

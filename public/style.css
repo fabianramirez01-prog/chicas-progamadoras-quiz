@@ -31,7 +31,13 @@ body {
 }
 
 body {
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial,
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    Roboto,
+    Helvetica,
+    Arial,
     sans-serif;
   background: linear-gradient(160deg, var(--bg2), var(--bg));
   color: var(--text);
@@ -90,7 +96,9 @@ button {
   font-weight: 700;
   color: #fff;
   background: var(--brand-pink);
-  transition: transform 0.08s ease, filter 0.15s ease;
+  transition:
+    transform 0.08s ease,
+    filter 0.15s ease;
 }
 
 button:hover {
@@ -319,15 +327,30 @@ button:disabled {
   transition: width 0.4s ease;
 }
 
-.dist .bar.b1 { background: var(--c1); }
-.dist .bar.b2 { background: var(--c2); }
-.dist .bar.b3 { background: var(--c3); }
-.dist .bar.b4 { background: var(--c4); }
+.dist .bar.b1 {
+  background: var(--c1);
+}
+.dist .bar.b2 {
+  background: var(--c2);
+}
+.dist .bar.b3 {
+  background: var(--c3);
+}
+.dist .bar.b4 {
+  background: var(--c4);
+}
 
 @media (max-width: 600px) {
-  .question-text { font-size: 1.4rem; }
-  .answer { font-size: 1.05rem; min-height: 80px; }
-  .big { font-size: 2.2rem; }
+  .question-text {
+    font-size: 1.4rem;
+  }
+  .answer {
+    font-size: 1.05rem;
+    min-height: 80px;
+  }
+  .big {
+    font-size: 2.2rem;
+  }
 }
 
 /* ---- Avatar picker (player join) ---- */
@@ -354,6 +377,28 @@ button:disabled {
   border-color: #fff;
   background: var(--brand-pink);
   transform: scale(1.05);
+}
+
+.avatar-option.taken {
+  opacity: 0.3;
+  cursor: not-allowed;
+  position: relative;
+  filter: grayscale(0.6);
+}
+
+.avatar-option.taken::after {
+  content: "✓";
+  position: absolute;
+  top: 2px;
+  right: 5px;
+  font-size: 0.8rem;
+  color: #fff;
+}
+
+.hint {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin: 0 0 14px;
 }
 
 @media (max-width: 420px) {
@@ -409,12 +454,14 @@ button:disabled {
 
 /* ---- Winners podium (end screen, top 3) ---- */
 .podium {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: flex-end;
   gap: 16px;
   margin: 24px 0;
-  min-height: 240px;
+  min-height: 300px;
+  overflow: hidden;
 }
 
 .podium-spot {
@@ -423,11 +470,32 @@ button:disabled {
   align-items: center;
   width: 150px;
   max-width: 30vw;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.podium-spot:hover {
+  transform: translateY(-6px);
+}
+
+/* The header (avatar + name + score) fades in after the block has risen. */
+.podium-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: head-in 0.4s ease forwards;
+  animation-delay: var(--head-delay, 0.6s);
 }
 
 .podium-avatar {
   font-size: 3rem;
   line-height: 1;
+  display: inline-block;
+  transform-origin: bottom center;
+  animation: avatar-bob 2.4s ease-in-out infinite;
+  animation-delay: var(--head-delay, 0.6s);
 }
 
 .podium-name {
@@ -443,7 +511,18 @@ button:disabled {
   margin-bottom: 8px;
 }
 
+/* Crown that drops onto the winner. */
+.podium-crown {
+  font-size: 2rem;
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(-20px) rotate(-12deg);
+  animation: crown-drop 0.5s cubic-bezier(0.22, 1.4, 0.4, 1) forwards;
+  animation-delay: 1.1s;
+}
+
 .podium-block {
+  position: relative;
   width: 100%;
   border-radius: 12px 12px 0 0;
   display: flex;
@@ -453,29 +532,200 @@ button:disabled {
   padding-top: 12px;
   color: #222;
   font-weight: 900;
+  overflow: hidden;
+  transform-origin: bottom center;
+  /* Grow from the floor up to the block's natural height. */
+  transform: scaleY(0);
+  animation: block-rise 0.55s cubic-bezier(0.18, 0.9, 0.32, 1.2) forwards;
+  animation-delay: var(--rise-delay, 0s);
+}
+
+/* Shine sweep across the block. */
+.podium-block::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  transform: skewX(-18deg);
+  animation: block-shine 2.6s ease-in-out infinite;
+  animation-delay: 1.2s;
 }
 
 .podium-block .podium-medal {
   font-size: 2rem;
+  animation: medal-pop 0.5s ease forwards;
+  animation-delay: calc(var(--rise-delay, 0s) + 0.3s);
+  transform: scale(0);
 }
 
 .podium-block .podium-place {
   font-size: 1.1rem;
 }
 
+/* Heights + colors per place. 3rd rises first, then 2nd, then 1st. */
 .podium-spot.place-1 .podium-block {
-  height: 150px;
+  height: 160px;
   background: linear-gradient(180deg, #ffd700, #e6b800);
+  --rise-delay: 0.9s;
+}
+.podium-spot.place-1 .podium-head {
+  --head-delay: 1.35s;
+}
+.podium-spot.place-1 .podium-avatar {
+  --head-delay: 1.35s;
+  font-size: 3.6rem;
 }
 
 .podium-spot.place-2 .podium-block {
-  height: 110px;
+  height: 115px;
   background: linear-gradient(180deg, #c0c0c0, #a8a8a8);
+  --rise-delay: 0.45s;
+}
+.podium-spot.place-2 .podium-head {
+  --head-delay: 0.9s;
+}
+.podium-spot.place-2 .podium-avatar {
+  --head-delay: 0.9s;
 }
 
 .podium-spot.place-3 .podium-block {
   height: 80px;
   background: linear-gradient(180deg, #cd7f32, #b5702c);
+  --rise-delay: 0s;
+}
+.podium-spot.place-3 .podium-head {
+  --head-delay: 0.45s;
+}
+.podium-spot.place-3 .podium-avatar {
+  --head-delay: 0.45s;
+}
+
+/* Winner glow pulse on the gold block. */
+.podium-spot.place-1 .podium-block {
+  box-shadow: 0 0 24px 2px rgba(255, 215, 0, 0.6);
+  animation:
+    block-rise 0.55s cubic-bezier(0.18, 0.9, 0.32, 1.2) forwards,
+    winner-glow 1.8s ease-in-out 1.6s infinite;
+}
+
+/* Re-trigger the whole podium animation (toggled from JS). */
+.podium.replay .podium-block,
+.podium.replay .podium-head,
+.podium.replay .podium-avatar,
+.podium.replay .podium-medal,
+.podium.replay .podium-crown,
+.podium.replay .podium-block::after {
+  animation: none !important;
+}
+
+/* Confetti pieces. */
+.confetti {
+  position: absolute;
+  top: -12px;
+  width: 9px;
+  height: 14px;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: confetti-fall linear forwards;
+}
+
+@keyframes block-rise {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes head-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes medal-pop {
+  0% {
+    transform: scale(0) rotate(-30deg);
+  }
+  70% {
+    transform: scale(1.25) rotate(8deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes crown-drop {
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+}
+
+@keyframes avatar-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-3deg);
+  }
+}
+
+@keyframes block-shine {
+  0% {
+    left: -60%;
+  }
+  60%,
+  100% {
+    left: 130%;
+  }
+}
+
+@keyframes winner-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px 2px rgba(255, 215, 0, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 34px 8px rgba(255, 215, 0, 0.85);
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(320px) rotate(720deg);
+  }
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .podium-block,
+  .podium-head,
+  .podium-avatar,
+  .podium-medal,
+  .podium-crown,
+  .podium-block::after,
+  .confetti {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 .full-board {

@@ -17,25 +17,58 @@ function show(name) {
   screens[name].classList.remove("hidden");
 }
 
-const AVATARS = [
-  "👩‍💻",
-  "👩‍🔬",
-  "👩‍🚀",
-  "🦸‍♀️",
-  "🧕",
-  "👧",
-  "🐱",
-  "🦊",
-  "🐼",
-  "🦄",
-  "🌸",
-  "⭐",
-];
+// Avatar list and taken set are provided by the server (player:hello /
+// lobby:update) so the picker always reflects the real options and which ones
+// are already in use. A small fallback is used until the server replies.
+let AVATARS = ["👩‍💻", "👩‍🔬", "👩‍🚀", "🦊", "🦄", "🌸", "⭐"];
+let takenAvatars = [];
 
 let myName = "";
-let myAvatar = AVATARS[0];
+let myAvatar = null; // chosen avatar, or null to let the server pick a free one
 let joined = false;
 let answered = false;
+let timerInterval = null;
+
+// A random nickname shown as the input placeholder. If the player leaves the
+// field blank, this exact name is sent to the server, so what they see is what
+// they get. Mirrors the server's naming style.
+const NAME_ADJ = [
+  "Super",
+  "Mega",
+  "Ultra",
+  "Ninja",
+  "Cosmic",
+  "Pixel",
+  "Turbo",
+  "Cyber",
+  "Astro",
+  "Quantum",
+  "Electro",
+  "Hyper",
+];
+const NAME_NOUN = [
+  "Coder",
+  "Dev",
+  "Hacker",
+  "Byte",
+  "Logic",
+  "Script",
+  "Pixel",
+  "Robot",
+  "Star",
+  "Comet",
+  "Fox",
+  "Unicorn",
+];
+
+function makeRandomName() {
+  const adj = NAME_ADJ[Math.floor(Math.random() * NAME_ADJ.length)];
+  const noun = NAME_NOUN[Math.floor(Math.random() * NAME_NOUN.length)];
+  const num = Math.floor(Math.random() * 100);
+  return `${adj}${noun}${num}`;
+}
+
+let suggestedName = makeRandomName();
 
 // Enable/disable the join form depending on the game phase. Players can only
 // join during the lobby; otherwise show a "game in progress" notice.
@@ -46,47 +79,60 @@ function setJoinLocked(locked) {
   form.classList.toggle("hidden", locked);
   lockedBox.classList.toggle("hidden", !locked);
 }
-let timerInterval = null;
 
 // ---- Avatar picker ----
 function buildAvatarPicker() {
   const grid = el("avatarGrid");
+  if (!grid) return;
+  const taken = new Set(takenAvatars);
   grid.innerHTML = "";
-  AVATARS.forEach((a, i) => {
+
+  // If the currently selected avatar got taken by someone else, clear it.
+  if (myAvatar && taken.has(myAvatar)) myAvatar = null;
+
+  AVATARS.forEach((a) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "avatar-option" + (i === 0 ? " selected" : "");
+    const isTaken = taken.has(a);
+    const isSelected = a === myAvatar;
+    btn.className =
+      "avatar-option" +
+      (isSelected ? " selected" : "") +
+      (isTaken ? " taken" : "");
     btn.textContent = a;
     btn.setAttribute("role", "radio");
-    btn.setAttribute("aria-checked", i === 0 ? "true" : "false");
-    btn.addEventListener("click", () => {
-      myAvatar = a;
-      grid.querySelectorAll(".avatar-option").forEach((b) => {
-        b.classList.remove("selected");
-        b.setAttribute("aria-checked", "false");
+    btn.setAttribute("aria-checked", isSelected ? "true" : "false");
+    if (isTaken) {
+      btn.disabled = true;
+      btn.title = "Ya elegido por otra jugadora";
+    } else {
+      btn.addEventListener("click", () => {
+        myAvatar = a;
+        buildAvatarPicker();
       });
-      btn.classList.add("selected");
-      btn.setAttribute("aria-checked", "true");
-    });
+    }
     grid.appendChild(btn);
   });
 }
 buildAvatarPicker();
 
 // ---- Join ----
+// Show the random suggestion as the field's placeholder.
+el("nameInput").placeholder = suggestedName;
+
 el("joinBtn").addEventListener("click", join);
 el("nameInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") join();
 });
 
 function join() {
-  const name = el("nameInput").value.trim();
-  if (!name) {
-    el("joinStatus").textContent = "Escribe un nombre.";
-    return;
-  }
+  // Name is optional — if the field is blank, use the suggested random name
+  // shown in the placeholder so the player gets exactly what they saw.
+  const typed = el("nameInput").value.trim();
+  const name = typed || suggestedName;
   el("joinBtn").disabled = true;
   el("joinStatus").textContent = "Conectando...";
+  // Send the chosen avatar if any; otherwise let the server assign a free one.
   socket.emit("player:join", { name, avatar: myAvatar }, (res) => {
     el("joinBtn").disabled = false;
     if (res && res.ok) {
@@ -97,10 +143,35 @@ function join() {
       el("waitAvatar").textContent = myAvatar;
       show("wait");
     } else {
+      // If the suggested random name collided with a taken one, generate a
+      // fresh suggestion and update the placeholder so the next try works.
+      if (!typed) {
+        suggestedName = makeRandomName();
+        el("nameInput").placeholder = suggestedName;
+      }
       el("joinStatus").textContent = (res && res.error) || "No se pudo entrar.";
     }
   });
 }
+
+// Keep the avatar picker in sync as other players join/leave.
+socket.on("lobby:update", (data) => {
+  if (joined) return;
+  if (data && Array.isArray(data.takenAvatars)) {
+    takenAvatars = data.takenAvatars;
+    buildAvatarPicker();
+  }
+  if (data && data.full) {
+    el("joinBtn").disabled = true;
+    el("joinStatus").textContent =
+      `El juego está lleno (máx. ${data.maxPlayers}).`;
+  } else {
+    el("joinBtn").disabled = false;
+    if (el("joinStatus").textContent.startsWith("El juego está lleno")) {
+      el("joinStatus").textContent = "";
+    }
+  }
+});
 
 // ---- Question ----
 socket.on("game:question", (q) => {
@@ -207,7 +278,22 @@ socket.on("game:closed", () => {
 // whether joining is currently open.
 socket.on("connect", () => {
   socket.emit("player:hello", (res) => {
-    if (!joined) setJoinLocked(res && res.phase !== "lobby");
+    if (!res) return;
+    if (Array.isArray(res.avatars) && res.avatars.length) {
+      AVATARS = res.avatars;
+    }
+    if (Array.isArray(res.takenAvatars)) {
+      takenAvatars = res.takenAvatars;
+    }
+    buildAvatarPicker();
+    if (!joined) {
+      setJoinLocked(res.phase !== "lobby");
+      if (res.full && res.phase === "lobby") {
+        el("joinBtn").disabled = true;
+        el("joinStatus").textContent =
+          `El juego está lleno (máx. ${res.maxPlayers}).`;
+      }
+    }
   });
 });
 

@@ -1,7 +1,7 @@
 {
   "name": "quizapp",
   "version": "1.0.0",
-  "description": "Chicas Programadoras Quiz — Kahoot-style LAN quiz app that serves questions from a markdown file",
+  "description": "Chicas Programadoras Quiz LAN quiz app that serves questions from a markdown file",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
