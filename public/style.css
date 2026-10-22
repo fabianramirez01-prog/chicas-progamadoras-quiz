@@ -782,3 +782,64 @@ button:disabled {
     left: 10px;
   }
 }
+
+/* ---- Reveal: correct vs. incorrect summary bars ---- */
+.result-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 14px 0 4px;
+}
+
+.result-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-bar-label {
+  flex: 0 0 150px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.result-bar-track {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  height: 46px;
+  overflow: hidden;
+}
+
+.result-bar-fill {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 14px;
+  border-radius: 10px;
+  min-width: 2.5em;
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.3rem;
+  /* Animated grow on reveal. */
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.result-bar-fill.bar-correct {
+  background: linear-gradient(90deg, #4caf50, var(--brand-green));
+}
+
+.result-bar-fill.bar-wrong {
+  background: linear-gradient(90deg, #c2185b, var(--brand-pink));
+}
+
+@media (max-width: 600px) {
+  .result-bar-label {
+    flex-basis: 110px;
+    font-size: 0.95rem;
+  }
+  .result-bar-track {
+    height: 40px;
+  }
+}

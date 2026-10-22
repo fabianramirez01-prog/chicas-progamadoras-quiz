@@ -22,6 +22,14 @@
         <button id="resetBtn" class="btn-secondary btn-small hidden">
           ↺ Volver al inicio (lobby)
         </button>
+        <button
+          id="musicBtn"
+          class="btn-secondary btn-small"
+          aria-pressed="false"
+          title="Música de fondo"
+        >
+          🔊 Música
+        </button>
       </div>
 
       <!-- Lobby -->
@@ -54,10 +62,20 @@
       <section id="revealScreen" class="card hidden">
         <h2 class="question-text" id="revealQText"></h2>
         <div class="answers" id="revealAnswers"></div>
-        <h3 id="leaderboardTitle">Tabla de posiciones</h3>
-        <ol class="leaderboard" id="leaderboard"></ol>
-        <br />
-        <button id="nextBtn" class="btn-full">Siguiente pregunta</button>
+
+        <!-- Stage 1: correct vs. incorrect summary bar graph -->
+        <div id="revealSummary">
+          <h3>¿Cómo les fue?</h3>
+          <div class="result-bars" id="resultBars"></div>
+        </div>
+
+        <!-- Stage 2: current ranking + next button (shown after a delay) -->
+        <div id="revealRanking" class="hidden">
+          <h3 id="leaderboardTitle">Tabla de posiciones</h3>
+          <ol class="leaderboard" id="leaderboard"></ol>
+          <br />
+          <button id="nextBtn" class="btn-full">Siguiente pregunta</button>
+        </div>
       </section>
 
       <!-- End -->
